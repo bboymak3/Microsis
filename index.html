@@ -3,51 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Global Pro Automotriz</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Login - Global Pro</title>
     <style>
-        .login-container { max-width: 400px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; }
-        .login-container input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        .btn-login { width: 95%; background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        .reg-link { margin-top: 15px; display: block; color: #3498db; text-decoration: none; font-size: 14px; }
+        body { font-family: sans-serif; background: #2c3e50; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h2 { color: #2c3e50; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2980b9; }
+        .footer { margin-top: 15px; font-size: 12px; color: #7f8c8d; }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <img src="https://via.placeholder.com/100" alt="Logo" style="border-radius: 50%;">
-        <h2>Sistema de Terminal</h2>
-        <p>Ingrese su ID (Com01...) y su Placa</p>
+
+    <div class="login-box">
+        <h2>Global Pro</h2>
+        <p style="font-size: 14px; color: #7f8c8d;">Control de Terminal</p>
         
-        <form id="loginForm">
-            <input type="text" id="usuario" placeholder="Usuario (Ej: Com01)" required>
-            <input type="password" id="password" placeholder="Contraseña (Placa)" required>
-            <button type="submit" class="btn-login">Entrar al Sistema</button>
-        </form>
+        <input type="text" id="u" placeholder="Usuario (Ej: Com01)" required>
+        <input type="password" id="p" placeholder="Contraseña (Placa)" required>
         
-        <a href="registro.html" class="reg-link">¿Eres nuevo chofer? Regístrate aquí</a>
+        <button id="btnEntrar" onclick="ejecutarLogin()">ENTRAR</button>
+        
+        <div class="footer">Sistema de Gestión de Flota v1.0</div>
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const usuario = document.getElementById('usuario').value;
-            const pass = document.getElementById('password').value;
+        async function ejecutarLogin() {
+            const usuario = document.getElementById('u').value.trim();
+            const pass = document.getElementById('p').value.trim();
+            const boton = document.getElementById('btnEntrar');
 
-            // Aquí llamaremos a la función de Cloudflare que crearemos luego
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                body: JSON.stringify({ usuario, pass })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Si es admin va a admin.html, si es chofer a chofer.html
-                window.location.href = data.rol === 'admin' ? '/admin.html' : '/chofer.html';
-            } else {
-                alert('Usuario o Placa incorrectos');
+            if (!usuario || !pass) {
+                alert("Por favor, llena ambos campos");
+                return;
             }
-        });
+
+            // Cambiamos el texto del botón para saber que está trabajando
+            boton.innerText = "Conectando...";
+            boton.disabled = true;
+
+            try {
+                const respuesta = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, pass })
+                });
+
+                const resultado = await respuesta.json();
+
+                if (resultado.success) {
+                    // Guardamos los datos en el navegador
+                    localStorage.setItem('userId', resultado.id);
+                    localStorage.setItem('rol', resultado.rol);
+                    
+                    // Redirigir según el tipo de usuario
+                    if (resultado.rol === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'chofer.html';
+                    }
+                } else {
+                    alert("❌ Error: Usuario o contraseña incorrectos");
+                    boton.innerText = "ENTRAR";
+                    boton.disabled = false;
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("⚠️ Error de conexión con el servidor. Verifica el 'Binding' en Cloudflare.");
+                boton.innerText = "ENTRAR";
+                boton.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
