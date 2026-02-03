@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Pro - Admin</title>
+    <title>Admin - Global Pro Automotriz</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <header>
-        <h1>Control Global Pro Automotriz</h1>
-        <nav id="status-bar">
+        <h1>Control Global Pro 24/7</h1>
+        <div id="status-bar">
             <button class="btn-rojo">PENDIENTES</button>
             <button class="btn-naranja">EN RUTA</button>
             <button class="btn-verde">FINALIZADOS</button>
-        </nav>
+        </div>
     </header>
 
-    <main>
-        <div class="perfil-container">
-            <div style="width:100%">
-                <h3>Gestión de Fichas (Com01 - Com100)</h3>
-                <select id="selector" onchange="cargar(this.value)" style="width:100%; padding:10px;">
-                    <option value="">Seleccione un Puesto...</option>
-                </select>
-            </div>
+    <main style="padding: 15px;">
+        <section class="perfil-container">
+            <h3>Ficha Técnica del Chofer (Com01-100)</h3>
+            <select id="selector" onchange="cargarPerfil(this.value)" style="width:100%; padding:12px; margin-bottom:15px;">
+                <option value="">Seleccione un Puesto...</option>
+            </select>
 
             <form id="perfilForm" class="grid-form">
                 <input type="hidden" name="cedula_id" id="f_id">
@@ -32,13 +30,26 @@
                 <label>Placa/Clave: <input type="text" name="placa_buseta" id="f_placa"></label>
                 <label>Serial Motor: <input type="text" name="serial_motor" id="f_serial"></label>
                 <label>Tipo Sangre: <input type="text" name="tipo_sangre" id="f_sangre"></label>
-                <label>Tel. Familiar: <input type="text" name="contacto_familiar" id="f_fam"></label>
+                <label>Tlf Familiar: <input type="text" name="contacto_familiar" id="f_fam"></label>
                 <label>Usa Lentes: <input type="checkbox" name="usa_lentes" id="f_lentes"></label>
-                <button type="button" onclick="guardar()" class="btn-save">GUARDAR CAMBIOS</button>
+                <button type="button" onclick="guardarPerfil()" class="btn-save" style="background:#2c3e50; color:white; padding:12px; width:100%; border:none; margin-top:10px;">GUARDAR DATOS</button>
             </form>
-        </div>
+        </section>
 
-        <div id="map" style="height: 400px; margin-top:20px; border-radius:10px;"></div>
+        <section style="margin-top:20px;">
+            <h3>Mapa en Tiempo Real (Unidades Naranjas)</h3>
+            <div id="map" style="height: 350px; border-radius:10px; border:2px solid #333;"></div>
+        </section>
+
+        <section class="perfil-container" style="margin-top:20px; border-top: 5px solid #3498db;">
+            <h3>Agregar Nuevo Destino</h3>
+            <div class="grid-form">
+                <input type="text" id="new_destino" placeholder="Ej: Barquisimeto">
+                <input type="text" id="new_horarios" placeholder="08:30, 10:00, 15:00">
+                <button onclick="agregarRuta()" style="background:#27ae60; color:white; border:none; padding:10px;">AÑADIR RUTA</button>
+            </div>
+            <div id="lista-rutas" style="margin-top:10px;"></div>
+        </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -54,9 +65,11 @@
             data.filter(u => u.rol === 'chofer').forEach(u => {
                 sel.innerHTML += `<option value="${u.cedula_id}">${u.cedula_id} - ${u.nombre}</option>`;
             });
+            cargarRutas();
         }
 
-        async function cargar(id) {
+        async function cargarPerfil(id) {
+            if(!id) return;
             const res = await fetch(`/api/usuarios?id=${id}`);
             const u = await res.json();
             document.getElementById('f_id').value = u.cedula_id;
@@ -68,11 +81,25 @@
             document.getElementById('f_lentes').checked = u.usa_lentes === 1;
         }
 
-        async function guardar() {
+        async function guardarPerfil() {
             const data = Object.fromEntries(new FormData(document.getElementById('perfilForm')));
             data.usa_lentes = document.getElementById('f_lentes').checked;
             await fetch('/api/usuarios/update', { method:'POST', body: JSON.stringify(data) });
-            alert("Datos actualizados.");
+            alert("Información actualizada en D1");
+        }
+
+        async function agregarRuta() {
+            const destino = document.getElementById('new_destino').value;
+            const horarios = document.getElementById('new_horarios').value;
+            await fetch('/api/rutas', { method:'POST', body: JSON.stringify({destino, horarios}) });
+            location.reload();
+        }
+
+        async function cargarRutas() {
+            const res = await fetch('/api/rutas');
+            const rutas = await res.json();
+            const list = document.getElementById('lista-rutas');
+            rutas.forEach(r => list.innerHTML += `<p>📍 ${r.destino} (${r.horarios})</p>`);
         }
 
         setInterval(async () => {
@@ -82,7 +109,7 @@
                 if(markers[u.cedula_id]) markers[u.cedula_id].setLatLng([u.ultima_latitud, u.ultima_longitud]);
                 else markers[u.cedula_id] = L.marker([u.ultima_latitud, u.ultima_longitud]).addTo(map).bindPopup(u.cedula_id);
             });
-        }, 10000);
+        }, 15000);
 
         window.onload = init;
     </script>
