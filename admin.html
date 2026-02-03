@@ -2,54 +2,89 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Control - Global Pro Automotriz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Pro - Admin</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <header>
-        <h1>Gestión de Terminal - Administrador</h1>
-        <div id="status-bar">
-            <button class="btn-rojo">Pendientes</button>
-            <button class="btn-naranja">En Ruta</button>
-            <button class="btn-verde">Finalizados</button>
-        </div>
+        <h1>Control Global Pro Automotriz</h1>
+        <nav id="status-bar">
+            <button class="btn-rojo">PENDIENTES</button>
+            <button class="btn-naranja">EN RUTA</button>
+            <button class="btn-verde">FINALIZADOS</button>
+        </nav>
     </header>
 
     <main>
-        <section id="gestion-perfiles">
-            <h2>Ficha del Chofer</h2>
-            <input type="text" id="searchBar" placeholder="Buscar por Placa o ID (Com01...)">
-            
-            <div class="perfil-container">
-                <div class="col-foto">
-                    <div class="foto-placeholder">FOTO</div>
-                    <input type="file" id="fotoInput">
-                </div>
-                
-                <form id="perfilForm">
-                    <div class="grid-form">
-                        <label>Puesto (ID): <input type="text" name="cedula_id" readonly></label>
-                        <label>Placa (Clave): <input type="text" name="placa_buseta"></label>
-                        <label>Nombre Completo: <input type="text" name="nombre"></label>
-                        
-                        <label>Tipo de Sangre: 
-                            <select name="tipo_sangre">
-                                <option value="A+">A+</option><option value="O+">O+</option>
-                                <option value="B+">B+</option><option value="S/N">S/N</option>
-                            </select>
-                        </label>
-                        <label>Género: <input type="text" name="genero"></label>
-                        <label>Usa Lentes: <input type="checkbox" name="usa_lentes"></label>
-                        
-                        <label>Serial Motor: <input type="text" name="serial_motor"></label>
-                        
-                        <label>Teléfono Chofer: <input type="tel" name="contacto_principal"></label>
-                        <label>Contacto Familiar: <input type="tel" name="contacto_familiar"></label>
-                    </div>
-                    <button type="button" onclick="guardarPerfil()">Actualizar Datos del Chofer</button>
-                </form>
+        <div class="perfil-container">
+            <div style="width:100%">
+                <h3>Gestión de Fichas (Com01 - Com100)</h3>
+                <select id="selector" onchange="cargar(this.value)" style="width:100%; padding:10px;">
+                    <option value="">Seleccione un Puesto...</option>
+                </select>
             </div>
-        </section>
+
+            <form id="perfilForm" class="grid-form">
+                <input type="hidden" name="cedula_id" id="f_id">
+                <label>Nombre: <input type="text" name="nombre" id="f_nombre"></label>
+                <label>Placa/Clave: <input type="text" name="placa_buseta" id="f_placa"></label>
+                <label>Serial Motor: <input type="text" name="serial_motor" id="f_serial"></label>
+                <label>Tipo Sangre: <input type="text" name="tipo_sangre" id="f_sangre"></label>
+                <label>Tel. Familiar: <input type="text" name="contacto_familiar" id="f_fam"></label>
+                <label>Usa Lentes: <input type="checkbox" name="usa_lentes" id="f_lentes"></label>
+                <button type="button" onclick="guardar()" class="btn-save">GUARDAR CAMBIOS</button>
+            </form>
+        </div>
+
+        <div id="map" style="height: 400px; margin-top:20px; border-radius:10px;"></div>
     </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map = L.map('map').setView([8.62, -70.20], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        let markers = {};
+
+        async function init() {
+            const res = await fetch('/api/usuarios');
+            const data = await res.json();
+            const sel = document.getElementById('selector');
+            data.filter(u => u.rol === 'chofer').forEach(u => {
+                sel.innerHTML += `<option value="${u.cedula_id}">${u.cedula_id} - ${u.nombre}</option>`;
+            });
+        }
+
+        async function cargar(id) {
+            const res = await fetch(`/api/usuarios?id=${id}`);
+            const u = await res.json();
+            document.getElementById('f_id').value = u.cedula_id;
+            document.getElementById('f_nombre').value = u.nombre;
+            document.getElementById('f_placa').value = u.placa_buseta;
+            document.getElementById('f_serial').value = u.serial_motor || '';
+            document.getElementById('f_sangre').value = u.tipo_sangre || '';
+            document.getElementById('f_fam').value = u.contacto_familiar || '';
+            document.getElementById('f_lentes').checked = u.usa_lentes === 1;
+        }
+
+        async function guardar() {
+            const data = Object.fromEntries(new FormData(document.getElementById('perfilForm')));
+            data.usa_lentes = document.getElementById('f_lentes').checked;
+            await fetch('/api/usuarios/update', { method:'POST', body: JSON.stringify(data) });
+            alert("Datos actualizados.");
+        }
+
+        setInterval(async () => {
+            const res = await fetch('/api/mapa-vivo');
+            const data = await res.json();
+            data.forEach(u => {
+                if(markers[u.cedula_id]) markers[u.cedula_id].setLatLng([u.ultima_latitud, u.ultima_longitud]);
+                else markers[u.cedula_id] = L.marker([u.ultima_latitud, u.ultima_longitud]).addTo(map).bindPopup(u.cedula_id);
+            });
+        }, 10000);
+
+        window.onload = init;
+    </script>
 </body>
 </html>
