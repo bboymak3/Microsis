@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Control - Global Pro Automotriz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Gestión de Terminal - Administrador</h1>
+        <div id="status-bar">
+            <button class="btn-rojo">Pendientes</button>
+            <button class="btn-naranja">En Ruta</button>
+            <button class="btn-verde">Finalizados</button>
+        </div>
+    </header>
+
+    <main>
+        <section id="gestion-perfiles">
+            <h2>Ficha del Chofer</h2>
+            <input type="text" id="searchBar" placeholder="Buscar por Placa o ID (Com01...)">
+            
+            <div class="perfil-container">
+                <div class="col-foto">
+                    <div class="foto-placeholder">FOTO</div>
+                    <input type="file" id="fotoInput">
+                </div>
+                
+                <form id="perfilForm">
+                    <div class="grid-form">
+                        <label>Puesto (ID): <input type="text" name="cedula_id" readonly></label>
+                        <label>Placa (Clave): <input type="text" name="placa_buseta"></label>
+                        <label>Nombre Completo: <input type="text" name="nombre"></label>
+                        
+                        <label>Tipo de Sangre: 
+                            <select name="tipo_sangre">
+                                <option value="A+">A+</option><option value="O+">O+</option>
+                                <option value="B+">B+</option><option value="S/N">S/N</option>
+                            </select>
+                        </label>
+                        <label>Género: <input type="text" name="genero"></label>
+                        <label>Usa Lentes: <input type="checkbox" name="usa_lentes"></label>
+                        
+                        <label>Serial Motor: <input type="text" name="serial_motor"></label>
+                        
+                        <label>Teléfono Chofer: <input type="tel" name="contacto_principal"></label>
+                        <label>Contacto Familiar: <input type="tel" name="contacto_familiar"></label>
+                    </div>
+                    <button type="button" onclick="guardarPerfil()">Actualizar Datos del Chofer</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
