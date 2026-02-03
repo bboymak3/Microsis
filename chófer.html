@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Rutas - Chofer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h2 id="nombreChofer">Cargando...</h2>
+        <p id="placaChofer"></p>
+    </header>
+
+    <main id="app-chofer">
+        <h3>Mis Viajes de Hoy</h3>
+        <div id="lista-viajes">
+            <p>Consultando rutas asignadas...</p>
+        </div>
+    </main>
+
+    <div id="modalCierre" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; padding:20px;">
+        <h3>Finalizar Viaje</h3>
+        <label>¿Hubo algún inconveniente?
+            <select id="incidente" style="width:100%; padding:10px; margin:10px 0;">
+                <option value="Ninguno">Ninguno</option>
+                <option value="Lluvia">Lluvia</option>
+                <option value="Accidente">Accidente en la vía</option>
+                <option value="Falla Leve">Daño Leve</option>
+                <option value="Falla Grave">Daño Grave</option>
+                <option value="Alcabala">Alcabala</option>
+                <option value="Otros">Otros</option>
+            </select>
+        </label>
+        <textarea id="notas" placeholder="Notas adicionales..." style="width:100%; height:80px;"></textarea>
+        <button onclick="confirmarCierre()" style="background:#2ecc71; color:white; width:100%; padding:15px; border:none; margin-top:10px;">GUARDAR Y FINALIZAR</button>
+    </div>
+
+    <script>
+        // Lógica para capturar GPS y bloquear viajes secuenciales
+        let viajeActivoId = null;
+
+        async function iniciarViaje(id) {
+            const pasajeros = prompt("Cantidad de pasajeros al salir:");
+            if (!pasajeros) return;
+
+            // Capturar ubicación
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const res = await fetch('/api/update-viaje', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        viajeId: id,
+                        estado: 2, // Pasa a Naranja (En Ejecución)
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        pasajeros: pasajeros
+                    })
+                });
+                if(res.ok) location.reload();
+            });
+        }
+
+        function abrirCierre(id) {
+            viajeActivoId = id;
+            document.getElementById('modalCierre').style.display = 'block';
+        }
+
+        async function confirmarCierre() {
+            const incidente = document.getElementById('incidente').value;
+            const notas = document.getElementById('notas').value;
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                await fetch('/api/update-viaje', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        viajeId: viajeActivoId,
+                        estado: 3, // Pasa a Verde (Finalizado)
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        incidente: incidente,
+                        notas: notas
+                    })
+                });
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
+ C d 3. X xzc. Z. 
