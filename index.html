@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Global Pro Automotriz</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .login-container { max-width: 400px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; }
+        .login-container input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-login { width: 95%; background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .reg-link { margin-top: 15px; display: block; color: #3498db; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="https://via.placeholder.com/100" alt="Logo" style="border-radius: 50%;">
+        <h2>Sistema de Terminal</h2>
+        <p>Ingrese su ID (Com01...) y su Placa</p>
+        
+        <form id="loginForm">
+            <input type="text" id="usuario" placeholder="Usuario (Ej: Com01)" required>
+            <input type="password" id="password" placeholder="Contraseña (Placa)" required>
+            <button type="submit" class="btn-login">Entrar al Sistema</button>
+        </form>
+        
+        <a href="registro.html" class="reg-link">¿Eres nuevo chofer? Regístrate aquí</a>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('usuario').value;
+            const pass = document.getElementById('password').value;
+
+            // Aquí llamaremos a la función de Cloudflare que crearemos luego
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                body: JSON.stringify({ usuario, pass })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Si es admin va a admin.html, si es chofer a chofer.html
+                window.location.href = data.rol === 'admin' ? '/admin.html' : '/chofer.html';
+            } else {
+                alert('Usuario o Placa incorrectos');
+            }
+        });
+    </script>
+</body>
+</html>
