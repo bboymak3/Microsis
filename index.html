@@ -5,74 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Global Pro</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-box { background: white; padding: 30px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        h2 { color: #2c3e50; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #2980b9; }
-        .footer { margin-top: 15px; font-size: 12px; color: #7f8c8d; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a2a3a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 15px; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+        h2 { color: #1a2a3a; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #95a5a6; }
+        .debug-msg { margin-top: 15px; font-size: 11px; color: #e74c3c; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <div class="login-box">
+    <div class="card">
         <h2>Global Pro</h2>
-        <p style="font-size: 14px; color: #7f8c8d;">Control de Terminal</p>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">Acceso al Sistema</p>
         
-        <input type="text" id="u" placeholder="Usuario (Ej: Com01)" required>
-        <input type="password" id="p" placeholder="Contraseña (Placa)" required>
+        <input type="text" id="usuario" placeholder="Usuario (Com01)">
+        <input type="password" id="clave" placeholder="Contraseña">
         
-        <button id="btnEntrar" onclick="ejecutarLogin()">ENTRAR</button>
+        <button id="btnEntrar" onclick="intentarEntrar()">ENTRAR AL SISTEMA</button>
         
-        <div class="footer">Sistema de Gestión de Flota v1.0</div>
+        <div id="errorLog" class="debug-msg"></div>
     </div>
 
     <script>
-        async function ejecutarLogin() {
-            const usuario = document.getElementById('u').value.trim();
-            const pass = document.getElementById('p').value.trim();
-            const boton = document.getElementById('btnEntrar');
+        async function intentarEntrar() {
+            const u = document.getElementById('usuario').value.trim();
+            const p = document.getElementById('clave').value.trim();
+            const log = document.getElementById('errorLog');
+            const btn = document.getElementById('btnEntrar');
 
-            if (!usuario || !pass) {
-                alert("Por favor, llena ambos campos");
-                return;
-            }
+            if(!u || !p) return alert("Llena los campos");
 
-            // Cambiamos el texto del botón para saber que está trabajando
-            boton.innerText = "Conectando...";
-            boton.disabled = true;
+            btn.disabled = true;
+            btn.innerText = "Verificando en D1...";
+            log.innerText = "";
 
             try {
-                const respuesta = await fetch('/api/login', {
+                // LLAMADA AL PUENTE (CEREBRO)
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, pass })
+                    body: JSON.stringify({ usuario: u, pass: p })
                 });
 
-                const resultado = await respuesta.json();
-
-                if (resultado.success) {
-                    // Guardamos los datos en el navegador
-                    localStorage.setItem('userId', resultado.id);
-                    localStorage.setItem('rol', resultado.rol);
-                    
-                    // Redirigir según el tipo de usuario
-                    if (resultado.rol === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else {
-                        window.location.href = 'chofer.html';
-                    }
-                } else {
-                    alert("❌ Error: Usuario o contraseña incorrectos");
-                    boton.innerText = "ENTRAR";
-                    boton.disabled = false;
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Credenciales incorrectas");
                 }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("⚠️ Error de conexión con el servidor. Verifica el 'Binding' en Cloudflare.");
-                boton.innerText = "ENTRAR";
-                boton.disabled = false;
+
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('userId', data.id);
+                    localStorage.setItem('rol', data.rol);
+                    // Redirección inmediata
+                    window.location.href = (data.rol === 'admin') ? 'admin.html' : 'chofer.html';
+                }
+
+            } catch (err) {
+                log.innerText = "ERROR: " + err.message;
+                btn.disabled = false;
+                btn.innerText = "ENTRAR AL SISTEMA";
             }
         }
     </script>
